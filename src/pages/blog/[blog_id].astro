@@ -1,0 +1,98 @@
+---
+import * as cheerio from 'cheerio';
+import { getBlogs } from "../../libs/microcms.js";
+
+export async function getStaticPaths() {
+	const response = (await getBlogs({ fields: ["id", "title", "content"] }))
+
+	return response.contents.map((content) => ({
+		params: {
+			blog_id: content.id
+		},
+		props: { content }
+	}))
+}
+const { content } = Astro.props
+
+const cheerioDom = cheerio.load(content.content)
+const headings = cheerioDom('h2, h3').toArray()
+const toc = headings.map((data) => {
+  return {
+    id: data.attribs.id,
+    text: cheerioDom(data).text(),
+	tag: data.tagName,
+  }
+})
+---
+
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<meta name="viewport" content="width=device-width" />
+		<meta name="generator" content={Astro.generator} />
+		<title>Astro</title>
+	</head>
+	<body>
+		<!-- TOC をリストとして表示 -->
+		<nav>
+			<p>目次</p>
+			<ul>
+				{toc.map((item) => (
+					<li class={item.tag}>
+						<a href={`#${item.id}`}>{item.text}</a>
+					</li>
+				))}
+			</ul>
+		</nav>
+		<div set:html={content.content} />
+	</body>
+</html>
+
+<style>
+	body {
+		max-width: 800px;
+		margin: 0 auto;
+		padding: 20px;
+	}
+
+	nav {
+		background-color: #f9f9f9;
+		border: 1px solid #ddd;
+		padding: 15px;
+		margin-bottom: 20px;
+		border-radius: 5px;
+	}
+
+	nav p {
+		font-size: 1.2em;
+		font-weight: bold;
+		margin-top: 0;
+		margin-bottom: 10px;
+	}
+
+	ul {
+		list-style: none;
+		padding: 0;
+		margin: 0;
+	}
+
+	li.h2 {
+		font-weight: bold;
+		margin: 10px 0;
+	}
+
+	li.h3 {
+		font-weight: normal;
+		margin: 5px 0 5px 20px;
+	}
+
+	li a {
+		text-decoration: none;
+		color: #007acc;
+	}
+
+	li a:hover {
+		text-decoration: underline;
+	}
+</style>
