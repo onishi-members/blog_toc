@@ -10,6 +10,7 @@ const client = createClient({
 type Blogs = {
 	title: string;
 	content: string;
+	insert_toc: boolean;
 };
 
 // ブログ記事取得用関数

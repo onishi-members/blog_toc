@@ -3,7 +3,7 @@ import * as cheerio from 'cheerio';
 import { getBlogs } from "../../libs/microcms.js";
 
 export async function getStaticPaths() {
-	const response = (await getBlogs({ fields: ["id", "title", "content"] }))
+	const response = (await getBlogs({ fields: ["id", "title", "content", "insert_toc"] }))
 
 	return response.contents.map((content) => ({
 		params: {
@@ -35,16 +35,18 @@ const toc = headings.map((data) => {
 	</head>
 	<body>
 		<!-- TOC をリストとして表示 -->
-		<nav>
-			<p>目次</p>
-			<ul>
-				{toc.map((item) => (
-					<li class={item.tag}>
-						<a href={`#${item.id}`}>{item.text}</a>
-					</li>
-				))}
-			</ul>
-		</nav>
+		{content.insert_toc && (
+			<nav>
+				<p>目次</p>
+				<ul>
+					{toc.map((item) => (
+						<li class={item.tag}>
+							<a href={`#${item.id}`}>{item.text}</a>
+						</li>
+					))}
+				</ul>
+			</nav>
+		)}
 		<div set:html={content.content} />
 	</body>
 </html>
