@@ -23,6 +23,47 @@ const toc = headings.map((data) => {
 		tag: data.tagName,
 	}
 })
+
+type TocItem = {
+	id: string;
+	text: string;
+	tag: string;
+};
+
+type NestedTocItem = {
+	id: string;
+	text: string;
+	tag: string;
+	children: TocItem[];
+};
+
+// フラットなTOC配列を階層構造に変換する
+// h2要素を親として、その直後のh3要素を子要素としてグループ化
+function buildNestedToc(flatTocItems: TocItem[]): NestedTocItem[] {
+	const hierarchicalToc: NestedTocItem[] = [];
+	let currentH2Section: NestedTocItem | null = null;
+
+	for (const tocItem of flatTocItems) {
+		if (tocItem.tag === 'h2') {
+			// 新しいh2セクションを作成
+			currentH2Section = {
+				id: tocItem.id,
+				text: tocItem.text,
+				tag: tocItem.tag,
+				children: []
+			};
+			hierarchicalToc.push(currentH2Section);
+		} else if (tocItem.tag === 'h3' && currentH2Section !== null) {
+			// 現在のh2セクションにh3を追加
+			currentH2Section.children.push(tocItem);
+		}
+		// h2がない状態でh3が来た場合は無視
+	}
+
+	return hierarchicalToc;
+}
+
+const nestedToc = buildNestedToc(toc);
 ---
 
 <html lang="en">
@@ -39,10 +80,25 @@ const toc = headings.map((data) => {
 			<nav>
 				<p>目次</p>
 				<ul>
-					{toc.map((item) => (
-						<li class={item.tag}>
-							<a href={`#${item.id}`}>{item.text}</a>
-						</li>
+					{nestedToc.map((item) => (
+						item.tag === 'h2' ? (
+							<li class="h2">
+								<a href={`#${item.id}`}>{item.text}</a>
+								{item.children && item.children.length > 0 && (
+									<ul>
+										{item.children.map((child) => (
+											<li class="h3">
+												<a href={`#${child.id}`}>{child.text}</a>
+											</li>
+										))}
+									</ul>
+								)}
+							</li>
+						) : (
+							<li class="h3">
+								<a href={`#${item.id}`}>{item.text}</a>
+							</li>
+						)
 					))}
 				</ul>
 			</nav>
@@ -79,6 +135,11 @@ const toc = headings.map((data) => {
 		margin: 0;
 	}
 
+	ul ul {
+		padding-left: 20px;
+		margin-top: 5px;
+	}
+
 	li.h2 {
 		font-weight: bold;
 		margin: 10px 0;
@@ -86,7 +147,7 @@ const toc = headings.map((data) => {
 
 	li.h3 {
 		font-weight: normal;
-		margin: 5px 0 5px 20px;
+		margin: 5px 0;
 	}
 
 	li a {
