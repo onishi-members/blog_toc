@@ -1,0 +1,109 @@
+---
+export interface Props {
+	tocItems: Array<{
+		id: string;
+		text: string;
+		tag: string;
+	}>;
+}
+
+type TocItem = {
+	id: string;
+	text: string;
+	tag: string;
+	children?: TocItem[];
+};
+
+const { tocItems } = Astro.props;
+
+// TOCを階層構造に変換するヘルパー関数
+function buildNestedToc(items: Props['tocItems']): TocItem[] {
+	const result: TocItem[] = [];
+	let currentH2: TocItem | null = null;
+
+	for (const item of items) {
+		if (item.tag === 'h2') {
+			currentH2 = {
+				...item,
+				children: []
+			};
+			result.push(currentH2);
+		} else if (item.tag === 'h3' && currentH2) {
+			currentH2.children!.push(item);
+		}
+	}
+
+	return result;
+}
+
+const nestedToc = buildNestedToc(tocItems);
+---
+
+<nav class="toc">
+	<p class="toc-title">目次</p>
+	<ul class="toc-list">
+		{nestedToc.map((item) => (
+			<li class={`toc-item ${item.tag}`}>
+				<a href={`#${item.id}`} class="toc-link">{item.text}</a>
+				{item.children && item.children.length > 0 && (
+					<ul class="toc-sublist">
+						{item.children.map((child: TocItem) => (
+							<li class={`toc-item ${child.tag}`}>
+								<a href={`#${child.id}`} class="toc-link">{child.text}</a>
+							</li>
+						))}
+					</ul>
+				)}
+			</li>
+		))}
+	</ul>
+</nav>
+
+<style>
+	.toc {
+		background-color: #f9f9f9;
+		border: 1px solid #ddd;
+		padding: 15px;
+		margin-bottom: 20px;
+		border-radius: 5px;
+	}
+
+	.toc-title {
+		font-size: 1.2em;
+		font-weight: bold;
+		margin-top: 0;
+		margin-bottom: 10px;
+	}
+
+	.toc-list {
+		list-style: none;
+		padding: 0;
+		margin: 0;
+	}
+
+	.toc-sublist {
+		list-style: none;
+		padding-left: 20px;
+		margin-top: 5px;
+		margin-bottom: 0;
+	}
+
+	.toc-item.h2 {
+		font-weight: bold;
+		margin: 10px 0;
+	}
+
+	.toc-item.h3 {
+		font-weight: normal;
+		margin: 5px 0;
+	}
+
+	.toc-link {
+		text-decoration: none;
+		color: #007acc;
+	}
+
+	.toc-link:hover {
+		text-decoration: underline;
+	}
+</style> 
